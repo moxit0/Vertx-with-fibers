@@ -29,7 +29,6 @@ $(document).ready(function () {
             divElm.qtip("destroy");
         }
     }
-    ;
 
     /**
      * Do something when dragging stops on agenda div
@@ -37,8 +36,6 @@ $(document).ready(function () {
     function myAgendaDragStop(eventObj, divElm, agendaItem) {
         //alert("drag stop");
     }
-    ;
-
     /**
      * Custom tooltip - use any tooltip library you want to display the agenda data.
      * for this example we use qTip - http://craigsworks.com/projects/qtip/
@@ -111,7 +108,7 @@ $(document).ready(function () {
             style: myStyle
         });
 
-    };
+    }
 
     function uuid(){
         var seed = Date.now();
@@ -167,7 +164,6 @@ $(document).ready(function () {
         // open our add event dialog
         $('#add-event-form').dialog('open');
     }
-    ;
 
     /**
      * Called when user clicks and agenda item
@@ -180,7 +176,7 @@ $(document).ready(function () {
         var agendaItem = jfcalplugin.getAgendaItemById("#mycal", agendaId);
         clickAgendaItem = agendaItem;
         $("#display-event-form").dialog('open');
-    };
+    }
 
     /**
      * Called when user drops an agenda item into a day cell.
@@ -194,7 +190,7 @@ $(document).ready(function () {
         var agendaItem = jfcalplugin.getAgendaItemById("#mycal", agendaId);
         alert("You dropped agenda item " + agendaItem.title +
                 " onto " + date.toString() + ". Here is where you can make an AJAX call to update your database.");
-    };
+    }
 
     /**
      * Called when a user mouses over an agenda item	
@@ -203,7 +199,7 @@ $(document).ready(function () {
         var agendaId = eventObj.data.agendaId;
         var agendaItem = jfcalplugin.getAgendaItemById("#mycal", agendaId);
         //alert("You moused over agenda item " + agendaItem.title + " at location (X=" + eventObj.pageX + ", Y=" + eventObj.pageY + ")");
-    };
+    }
 
     /**
      * Initialize jquery ui datepicker. set date format to yyyy-mm-dd for easy parsing
@@ -374,7 +370,7 @@ $(document).ready(function () {
                             jfcalplugin.addAgendaItem(scheduledItem);
                         },
                         error: function(err) {
-                            alert(err.responseText);
+                            console.log(err.responseText);
                         },
                         contentType : "application/json",
                         dataType: "json"
@@ -529,8 +525,8 @@ $(document).ready(function () {
                 dateFormat: 'yy-mm-dd'
             });
             // initialize with the date that was clicked
-            $("#eStartDate").val(clickDate);
-            $("#eEndDate").val(clickDate);
+            $("#eStartDate").val(clickAgendaItem.startDate);
+            $("#eEndDate").val(clickAgendaItem.endDate);
             // initialize color pickers
             $("#eColorSelectorBackground").ColorPicker({
                 color: "#333333",

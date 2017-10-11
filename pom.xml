@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.idle.fibers</groupId>
-    <artifactId>vertx-sync-fibers</artifactId>
+    <artifactId>RoomScheduler</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
