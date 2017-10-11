@@ -69,7 +69,7 @@ public class MainVerticle extends SyncVerticle {
         router.post("/login").handler(FormLoginHandler.create(oauth2Provider));
          */
         router.route().failureHandler(ErrorHandler.create());
-        router.routeWithRegex( "/roomScheduler/api\\/.*").handler(Sync.fiberHandler(this::authenticate));
+        router.routeWithRegex("/roomScheduler/api\\/.*").handler(Sync.fiberHandler(this::authenticate));
         router.get("/roomScheduler/api/getWebContent").handler(Sync.fiberHandler(this::getWebContent));
         router.get("/roomScheduler/api/entities").handler(Sync.fiberHandler(this::getAllEntities));
         router.get("/roomScheduler/api/entities/:id").handler(Sync.fiberHandler(this::getEntityById));
@@ -83,7 +83,7 @@ public class MainVerticle extends SyncVerticle {
         webClient = WebClient.create(vertx, new WebClientOptions().setSsl(true));
 //        mongoClient = MongoClient.createShared(vertx, new JsonObject().put("connection_string", "mongodb://127.0.0.1:27017/testDb"));
         redisClient = RedisClient.create(vertx);
-        cookieCipher =  new CookieCipher();
+        cookieCipher = new CookieCipher();
     }
 
     @Suspendable
@@ -95,7 +95,7 @@ public class MainVerticle extends SyncVerticle {
         Instant endDate = scheduledRoom.getInstant("endDate");
         scheduledRoom.put("startDate", startDate).put("endDate", endDate);
         Long ts = startDate.toEpochMilli();
-        long result = awaitResult(h -> redisClient.zadd("user:entry:"+userId, ts, entry.encodePrettily(), h));
+        long result = awaitResult(h -> redisClient.zadd("user:entry:" + userId, ts, entry.encodePrettily(), h));
         logger.info("saveEntity: {0},\nresult: {1}", entry.encodePrettily(), result);
 
         routingContext.response().end(entry.encode());
@@ -104,8 +104,8 @@ public class MainVerticle extends SyncVerticle {
     @Suspendable
     private void getAllEntities(RoutingContext routingContext) {
         String userId = routingContext.get("userId");
-        JsonArray entries = awaitResult(h -> redisClient.zrange("user:entry:"+userId, 0, -1, h));
-        logger.info("getAllEntities: key:{0} \n{1}", "user:entry:"+userId, entries.encode());
+        JsonArray entries = awaitResult(h -> redisClient.zrange("user:entry:" + userId, 0, -1, h));
+        logger.info("getAllEntities: key:{0} \n{1}", "user:entry:" + userId, entries.encode());
         routingContext.response().end(entries.encodePrettily());
     }
 
@@ -126,48 +126,52 @@ public class MainVerticle extends SyncVerticle {
     }
 
     @Suspendable
-    private void authenticate(RoutingContext routingContext){
+    private void authenticate(RoutingContext routingContext) {
         Cookie cookie = routingContext.getCookie("roomScheduler");
         String requestPath = routingContext.request().path();
-        if (cookie == null && !"/roomScheduler/api/googleauth".equals(requestPath) && !"/roomScheduler/api/googletoken".equals(requestPath)) {
-            routingContext.response().putHeader("Location", "/index.html")
-                    .setStatusCode(301)
-                    .end();
-        }else{
+        if (cookie == null) {
+            if (!"/roomScheduler/api/googleauth".equals(requestPath) && !"/roomScheduler/api/googletoken".equals(requestPath)) {
+//            routingContext.response().putHeader("Location", "/index.html")
+//                    .setStatusCode(301)
+//                    .end();
+                routingContext.reroute(HttpMethod.GET, "/roomScheduler/");
+                return;
+            }
+        } else {
             String decryptedCookie = cookieCipher.decryptCookie(cookie.getValue());
             routingContext.put("userId", decryptedCookie.split(":")[0]);
             logger.info("decryptedCookie: {0} ", decryptedCookie);
-            routingContext.next();
+//            routingContext.next();
         }
+        routingContext.next();
     }
 
     @Suspendable
     private void startGoogleAuth(RoutingContext routingContext) {
-            String clientId = "873521963386-08elodg1nfpu2j784bikm66e3hjf4m3p.apps.googleusercontent.com";
-            String clientSecret = "sbYikW3olRC0O4SqvSD3xQrA";
+        String clientId = "873521963386-08elodg1nfpu2j784bikm66e3hjf4m3p.apps.googleusercontent.com";
+        String clientSecret = "sbYikW3olRC0O4SqvSD3xQrA";
 
-            OAuth2Auth oauth2 = GoogleAuth.create(vertx, clientId, clientSecret);
+        OAuth2Auth oauth2 = GoogleAuth.create(vertx, clientId, clientSecret);
 
-            final String callbackUrl = "http://localhost:8088/roomScheduler/api/googletoken";
-            // Authorization oauth2 URI
-            String authorization_uri = oauth2.authorizeURL(new JsonObject()
-                    .put("redirect_uri", callbackUrl)
-                    .put("scope", "openid profile email https://www.googleapis.com/auth/calendar")
-                    .put("approval_prompt", "force")
-                    .put("access_type", "offline")
-                    .put("state", UUID.randomUUID().toString()));
+        final String callbackUrl = "http://localhost:8088/roomScheduler/api/googletoken";
+        // Authorization oauth2 URI
+        String authorization_uri = oauth2.authorizeURL(new JsonObject()
+                .put("redirect_uri", callbackUrl)
+                .put("scope", "openid profile email https://www.googleapis.com/auth/calendar")
+                .put("approval_prompt", "force")
+                .put("access_type", "offline")
+                .put("state", UUID.randomUUID().toString()));
 
-            routingContext.response()
-                    .putHeader("Location", authorization_uri)
-                    .setStatusCode(302)
-                    .end();
+        routingContext.response()
+                .putHeader("Location", authorization_uri)
+                .setStatusCode(302)
+                .end();
     }
 
     @Suspendable
     private void getGoogleToken(RoutingContext routingContext) {
         String clientId = "873521963386-08elodg1nfpu2j784bikm66e3hjf4m3p.apps.googleusercontent.com";
         String clientSecret = "sbYikW3olRC0O4SqvSD3xQrA";
-
         OAuth2Auth oauth2Provider = GoogleAuth.create(vertx, clientId, clientSecret);
         final String callbackUrl = "http://localhost:8088/roomScheduler/api/googletoken";
 
@@ -177,8 +181,8 @@ public class MainVerticle extends SyncVerticle {
 
         final AccessToken token = awaitResult(h -> oauth2Provider.getToken(tokenConfig, h));
 
-        String uri = "https://www.googleapis.com/oauth2/v1/userinfo?v=2&oauth_token=" + token.principal().getValue("access_token");
-        HttpResponse<Buffer> response = awaitResult(h -> webClient.getAbs(uri).send(h));
+        String uri = "/oauth2/v1/userinfo?v=2&oauth_token=" + token.principal().getValue("access_token");
+        HttpResponse<Buffer> response = awaitResult(h -> webClient.get(443, "www.googleapis.com",uri).ssl(true).send(h));
         JsonObject userInfo = response.bodyAsJsonObject();
         logger.info("AccessToken: {0}", Json.encodePrettily(token.principal()));
         logger.info("userInfo: {0}", Json.encodePrettily(userInfo));
